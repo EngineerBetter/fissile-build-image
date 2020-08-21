@@ -1,0 +1,63 @@
+---
+resources:
+- name: this-repo
+  type: git
+  source:
+    uri: git@github.com:EngineerBetter/fissile-build-image.git
+
+- name: redis
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry-community/redis-boshrelease
+
+- name: fissile-linux
+  type: s3
+  source:
+    bucket: fissile
+    access_key_id: ((aws_access_key))
+    secret_access_key: ((aws_secret_key))
+    regexp: fissile-linux-exectable/fissile-(.*).tgz
+    region_name: eu-west-1
+
+jobs:
+- name: build-release-dockerhub
+  plan:
+  - in_parallel:
+    - get: this-repo
+    - get: redis
+      trigger: true
+      params:
+        tarball: false
+    - get: fissile-linux
+      trigger: true
+  - do:
+    - task: build
+      privileged: true
+      input_mapping:
+        release: redis
+      params:
+        STEMCELL_REPOSITORY: splatform/fissile-stemcell-opensuse
+        RELEASE_NAME: redis
+        REGISTRY_OR_ORG: engineerbetter
+      file: this-repo/tasks/build-dockerhub.yml
+
+- name: build-release-registry
+  plan:
+  - in_parallel:
+    - get: this-repo
+    - get: redis
+      trigger: true
+      params:
+        tarball: false
+    - get: fissile-linux
+      trigger: true
+  - do:
+    - task: build
+      privileged: true
+      input_mapping:
+        release: redis
+      params:
+        STEMCELL_REPOSITORY: splatform/fissile-stemcell-opensuse
+        RELEASE_NAME: redis
+        REGISTRY_OR_ORG: "((private_registry_ip_or_dns)):5000"
+      file: this-repo/tasks/build-registry.yml

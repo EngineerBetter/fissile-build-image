@@ -1,0 +1,19 @@
+---
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: havener/build-environment
+    tag: latest
+inputs:
+- name: release
+- name: this-repo
+- name: fissile-linux
+params:
+  STEMCELL_REPOSITORY:
+  RELEASE_NAME:
+  DOCKER_TEAM_USERNAME:
+  DOCKER_TEAM_PASSWORD:
+  REGISTRY_OR_ORG:
+run:
+  path: this-repo/tasks/build-dockerhub.sh
